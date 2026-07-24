@@ -16,7 +16,7 @@ import {
   createInvoiceLines,
   updateManualLine
 } from "@/lib/invoice/invoice";
-import { generateInvoicePdf } from "@/lib/invoice/pdf";
+import { generateInvoicePdf, generateRealHoursPdf } from "@/lib/invoice/pdf";
 import { formatDate, formatHours, formatMoney, formatUnitPrice } from "@/lib/calculations/format";
 
 interface InvoiceBuilderProps {
@@ -281,14 +281,24 @@ export function InvoiceBuilder({
             <span>Confirm different invoice total</span>
           </label>
         ) : null}
-        <button
-          className="primary-button"
-          type="button"
-          disabled={!canGeneratePdf}
-          onClick={() => generateInvoicePdf({ details, lines, totals, week, settings })}
-        >
-          Download PDF
-        </button>
+        <div className="toolbar">
+          <button
+            className="ghost-button"
+            type="button"
+            disabled={entries.length === 0}
+            onClick={() => generateRealHoursPdf({ details, entries, week, settings })}
+          >
+            Real hours PDF
+          </button>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={!canGeneratePdf}
+            onClick={() => generateInvoicePdf({ details, lines, totals, week, settings })}
+          >
+            Invoice PDF
+          </button>
+        </div>
       </div>
     </section>
   );
