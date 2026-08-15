@@ -8,9 +8,11 @@ interface WeeklySummaryPanelProps {
 
 export function WeeklySummaryPanel({ summary }: WeeklySummaryPanelProps) {
   const overLimit = summary.totalHours > summary.suggestedDeclaredHours;
+  const regularShare = summary.totalHours > 0 ? (summary.regularHours / summary.totalHours) * 100 : 0;
+  const overtimeShare = summary.totalHours > 0 ? (summary.overtimeHours / summary.totalHours) * 100 : 0;
 
   return (
-    <section className="panel">
+    <section className="panel weekly-summary-panel">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Thursday to Wednesday</p>
@@ -19,6 +21,17 @@ export function WeeklySummaryPanel({ summary }: WeeklySummaryPanelProps) {
         <span className={overLimit ? "status-pill status-pill--amber" : "status-pill"}>
           {overLimit ? "Invoice capped" : "Real hours"}
         </span>
+      </div>
+
+      <div className="hours-breakdown">
+        <div className="hours-breakdown__bar" aria-hidden="true">
+          <span className="hours-breakdown__regular" style={{ width: `${regularShare}%` }} />
+          <span className="hours-breakdown__overtime" style={{ width: `${overtimeShare}%` }} />
+        </div>
+        <div className="hours-breakdown__legend">
+          <span>Regular {formatHours(summary.regularHours)}</span>
+          <span>Overtime {formatHours(summary.overtimeHours)}</span>
+        </div>
       </div>
 
       <div className="metric-grid">

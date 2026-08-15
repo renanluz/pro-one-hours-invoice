@@ -31,7 +31,18 @@ import {
 
 type AppTab = "dashboard" | "entries" | "invoice" | "settings";
 type StorageMode = "local" | "supabase";
+type ThemeMode = "light" | "dark";
 const ALLOWED_EMAIL = "ren4n@live.com";
+const THEME_KEY = "pro-one.theme";
+
+function loadThemePreference(): ThemeMode {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  const saved = window.localStorage.getItem(THEME_KEY);
+  return saved === "dark" ? "dark" : "light";
+}
 
 export function HoursInvoiceApp() {
   const supabase = getSupabaseBrowserClient();
@@ -48,7 +59,21 @@ export function HoursInvoiceApp() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const settingsInitializedRef = useRef(false);
+
+  useEffect(() => {
+    const nextTheme = loadThemePreference();
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(THEME_KEY, theme);
+    }
+  }, [theme]);
 
   useEffect(() => {
     if (!cloudEnabled || !supabase) {
@@ -313,72 +338,98 @@ export function HoursInvoiceApp() {
 
   return (
     <main className="app-shell">
-      <nav className="top-nav" aria-label="Primary navigation">
-        <button className={activeTab === "dashboard" ? "is-active" : ""} onClick={() => setActiveTab("dashboard")}>
-          Dashboard
-        </button>
-        <button className={activeTab === "entries" ? "is-active" : ""} onClick={() => setActiveTab("entries")}>
-          Entries
-        </button>
-        <button className={activeTab === "invoice" ? "is-active" : ""} onClick={() => setActiveTab("invoice")}>
-          Invoice
-        </button>
-        <button className={activeTab === "settings" ? "is-active" : ""} onClick={() => setActiveTab("settings")}>
-          Settings
-        </button>
-      </nav>
+      <div className="app-frame">
+        <header className="top-bar">
+          <div className="brand">
+            <img
+              src={theme === "dark" ? "/logo/rl-mark-reverse.svg" : "/logo/rl-mark-reverse.svg"}
+              alt="Renan Luz"
+              className="brand__mark"
+            />
+            <div className="brand__copy">
+              <strong>Renan Luz</strong>
+              <span>Hours · Invoice</span>
+            </div>
+          </div>
 
-      {syncError ? <p className="sync-banner">{syncError}</p> : null}
+          <nav className="top-nav" aria-label="Primary navigation">
+            <button className={activeTab === "dashboard" ? "is-active" : ""} onClick={() => setActiveTab("dashboard")}>
+              Dashboard
+            </button>
+            <button className={activeTab === "entries" ? "is-active" : ""} onClick={() => setActiveTab("entries")}>
+              Entries
+            </button>
+            <button className={activeTab === "invoice" ? "is-active" : ""} onClick={() => setActiveTab("invoice")}>
+              Invoice
+            </button>
+            <button className={activeTab === "settings" ? "is-active" : ""} onClick={() => setActiveTab("settings")}>
+              Settings
+            </button>
+          </nav>
+        </header>
 
-      {activeTab === "dashboard" ? (
-        <Dashboard
-          summary={summary}
-          onAddEntry={() => setActiveTab("entries")}
-          onOpenInvoice={() => setActiveTab("invoice")}
-        />
-      ) : null}
+        <section className="app-content">
+          {syncError ? <p className="sync-banner">{syncError}</p> : null}
 
-      {activeTab === "entries" ? (
-        <div className="two-column-layout">
-          <EntryForm
-            settings={settings}
-            recentLocations={recentLocations}
-            editingEntry={editingEntry}
-            onSave={saveEntry}
-            onCancelEdit={() => setEditingEntry(undefined)}
-          />
-          <EntriesList
-            entries={selectedWeekEntries}
-            weeks={weeks}
-            weekStart={selectedWeekStart}
-            settings={settings}
-            onWeekChange={setSelectedWeekStart}
-            onEdit={editEntry}
-            onDelete={deleteEntry}
-          />
-        </div>
-      ) : null}
+          {activeTab === "dashboard" ? (
+            <Dashboard
+              settings={settings}
+              summary={summary}
+              recentLocations={recentLocations}
+              onSaveEntry={(entry) => void saveEntry(entry)}
+              onAddEntry={() => setActiveTab("entries")}
+              onOpenEntries={() => setActiveTab("entries")}
+              onOpenInvoice={() => setActiveTab("invoice")}
+            />
+          ) : null}
 
-      {activeTab === "invoice" ? (
-        <InvoiceBuilder
-          entries={selectedWeekEntries}
-          settings={settings}
-          weeks={weeks}
-          week={week}
-          weekStart={selectedWeekStart}
-          onWeekChange={setSelectedWeekStart}
-        />
-      ) : null}
+          {activeTab === "entries" ? (
+            <div className="two-column-layout">
+              <EntryForm
+                settings={settings}
+                recentLocations={recentLocations}
+                editingEntry={editingEntry}
+                onSave={(entry) => void saveEntry(entry)}
+                onCancelEdit={() => setEditingEntry(undefined)}
+                shortcutLabel="Today"
+                shortcutDate={todayIso()}
+              />
+              <EntriesList
+                entries={selectedWeekEntries}
+                weeks={weeks}
+                weekStart={selectedWeekStart}
+                settings={settings}
+                onWeekChange={setSelectedWeekStart}
+                onEdit={editEntry}
+                onDelete={(entryId) => void deleteEntry(entryId)}
+              />
+            </div>
+          ) : null}
 
-      {activeTab === "settings" ? (
-        <SettingsPanel
-          settings={settings}
-          onChange={setSettings}
-          onResetDemo={resetDemo}
-          storageLabel={storageMode === "supabase" ? "Supabase cloud" : "Local browser"}
-          onSignOut={storageMode === "supabase" ? signOut : undefined}
-        />
-      ) : null}
+          {activeTab === "invoice" ? (
+            <InvoiceBuilder
+              entries={selectedWeekEntries}
+              settings={settings}
+              weeks={weeks}
+              week={week}
+              weekStart={selectedWeekStart}
+              onWeekChange={setSelectedWeekStart}
+            />
+          ) : null}
+
+          {activeTab === "settings" ? (
+            <SettingsPanel
+              settings={settings}
+              onChange={setSettings}
+              onResetDemo={() => void resetDemo()}
+              storageLabel={storageMode === "supabase" ? "Supabase cloud" : "Local browser"}
+              onSignOut={storageMode === "supabase" ? () => void signOut() : undefined}
+              theme={theme}
+              onThemeChange={setTheme}
+            />
+          ) : null}
+        </section>
+      </div>
     </main>
   );
 }

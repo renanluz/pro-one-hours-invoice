@@ -28,8 +28,18 @@ export function AuthScreen({
 
   return (
     <main className="app-shell app-shell--auth">
-      <section className="hero-panel auth-panel">
-        <div>
+      <section className="panel auth-panel">
+        <div className="auth-brand">
+          <div className="brand brand--auth">
+            <img src="/logo/rl-mark-dark.svg" alt="Renan Luz" className="brand__mark brand__mark--light" />
+            <div className="brand__copy">
+              <strong>Renan Luz</strong>
+              <span>Hours · Invoice</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="auth-copy">
           <p className="eyebrow">Cloud Sync</p>
           <h1>Sign in to your hours app</h1>
         </div>

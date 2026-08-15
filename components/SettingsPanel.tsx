@@ -8,6 +8,8 @@ interface SettingsPanelProps {
   onResetDemo: () => void;
   storageLabel?: string;
   onSignOut?: () => void;
+  theme: "light" | "dark";
+  onThemeChange: (theme: "light" | "dark") => void;
 }
 
 export function SettingsPanel({
@@ -15,14 +17,16 @@ export function SettingsPanel({
   onChange,
   onResetDemo,
   storageLabel,
-  onSignOut
+  onSignOut,
+  theme,
+  onThemeChange
 }: SettingsPanelProps) {
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     onChange({ ...settings, [key]: value });
   }
 
   return (
-    <section className="panel">
+    <section className="panel settings-panel">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Settings</p>
@@ -37,6 +41,21 @@ export function SettingsPanel({
           ) : null}
           <button className="ghost-button" type="button" onClick={onResetDemo}>
             Reset demo
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-hero">
+        <div>
+          <p className="eyebrow">Appearance</p>
+          <h3>Theme mode</h3>
+        </div>
+        <div className="segmented-control segmented-control--compact" aria-label="Theme mode">
+          <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => onThemeChange("light")}>
+            Light
+          </button>
+          <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => onThemeChange("dark")}>
+            Dark
           </button>
         </div>
       </div>

@@ -8,14 +8,16 @@ import { isValidTimeRange } from "@/lib/calculations/time";
 
 type EntryDraft = Omit<WorkEntry, "id" | "createdAt" | "updatedAt">;
 
-const emptyDraft: EntryDraft = {
-  date: todayIso(),
-  location: "",
-  startTime: "07:00",
-  endTime: "15:00",
-  breakMinutes: 0,
-  notes: ""
-};
+function createEmptyDraft(date = todayIso()): EntryDraft {
+  return {
+    date,
+    location: "",
+    startTime: "07:00",
+    endTime: "15:00",
+    breakMinutes: 0,
+    notes: ""
+  };
+}
 
 interface EntryFormProps {
   settings: AppSettings;
@@ -23,6 +25,13 @@ interface EntryFormProps {
   editingEntry?: WorkEntry;
   onSave: (entry: WorkEntry) => void;
   onCancelEdit: () => void;
+  variant?: "full" | "compact";
+  defaultDate?: string;
+  shortcutLabel?: string;
+  shortcutDate?: string;
+  showNotes?: boolean;
+  title?: string;
+  eyebrow?: string;
 }
 
 export function EntryForm({
@@ -30,13 +39,21 @@ export function EntryForm({
   recentLocations,
   editingEntry,
   onSave,
-  onCancelEdit
+  onCancelEdit,
+  variant = "full",
+  defaultDate,
+  shortcutLabel = "Today",
+  shortcutDate,
+  showNotes = true,
+  title,
+  eyebrow = "Daily log"
 }: EntryFormProps) {
-  const [draft, setDraft] = useState<EntryDraft>(editingEntry ?? emptyDraft);
+  const fallbackDate = defaultDate ?? todayIso();
+  const [draft, setDraft] = useState<EntryDraft>(editingEntry ?? createEmptyDraft(fallbackDate));
 
   useEffect(() => {
-    setDraft(editingEntry ?? emptyDraft);
-  }, [editingEntry]);
+    setDraft(editingEntry ?? createEmptyDraft(fallbackDate));
+  }, [editingEntry, fallbackDate]);
 
   const calculated = calculateDailyPayroll(draft, settings);
   const isValid =
@@ -65,20 +82,26 @@ export function EntryForm({
     });
 
     if (!editingEntry) {
-      setDraft({ ...emptyDraft, date: todayIso(), location: draft.location });
+      setDraft({
+        ...createEmptyDraft(fallbackDate),
+        date: fallbackDate,
+        location: draft.location
+      });
     }
   }
 
   return (
-    <section className="panel entry-panel" id="entry-form">
+    <section className={`panel entry-panel entry-panel--${variant}`} id="entry-form">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Daily log</p>
-          <h2>{editingEntry ? "Edit work entry" : "Add work entry"}</h2>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{title ?? (editingEntry ? "Edit work entry" : "Add work entry")}</h2>
         </div>
-        <button className="ghost-button" type="button" onClick={() => update("date", todayIso())}>
-          Today
-        </button>
+        {shortcutDate ? (
+          <button className="ghost-button" type="button" onClick={() => update("date", shortcutDate)}>
+            {shortcutLabel}
+          </button>
+        ) : null}
       </div>
 
       <form className="entry-form" onSubmit={submit}>
@@ -123,17 +146,30 @@ export function EntryForm({
           </label>
         </div>
 
-        <label>
-          Notes
-          <textarea value={draft.notes ?? ""} onChange={(event) => update("notes", event.target.value)} />
-        </label>
+        {showNotes ? (
+          <label>
+            Notes
+            <textarea value={draft.notes ?? ""} onChange={(event) => update("notes", event.target.value)} />
+          </label>
+        ) : null}
 
-        <div className="calc-strip">
-          <span>{formatHours(calculated.totalHours)} total</span>
-          <span>{formatHours(calculated.regularHours)} normal</span>
-          <span>{formatHours(calculated.overtimeHours)} overtime</span>
-          <strong>{formatMoney(calculated.totalAmount)}</strong>
-        </div>
+        {variant === "compact" ? (
+          <div className="calc-strip calc-strip--compact">
+            <div>
+              <span>
+                {formatHours(calculated.totalHours)} total · {formatHours(calculated.overtimeHours)} overtime
+              </span>
+            </div>
+            <strong>{formatMoney(calculated.totalAmount)}</strong>
+          </div>
+        ) : (
+          <div className="calc-strip">
+            <span>{formatHours(calculated.totalHours)} total</span>
+            <span>{formatHours(calculated.regularHours)} normal</span>
+            <span>{formatHours(calculated.overtimeHours)} overtime</span>
+            <strong>{formatMoney(calculated.totalAmount)}</strong>
+          </div>
+        )}
 
         {!isValid ? (
           <p className="form-error">Check location, start/finish time, and break duration.</p>

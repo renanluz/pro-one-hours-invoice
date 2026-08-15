@@ -24,7 +24,7 @@ export function EntriesList({
   onDelete
 }: EntriesListProps) {
   return (
-    <section className="panel">
+    <section className="panel entries-panel">
       <div className="section-heading section-heading--stack">
         <div>
           <p className="eyebrow">Timesheet</p>
@@ -50,7 +50,7 @@ export function EntriesList({
             const payroll = calculateDailyPayroll(entry, settings);
             return (
               <article className="entry-row" key={entry.id}>
-                <div>
+                <div className="entry-row__main">
                   <strong>{formatDate(entry.date)}</strong>
                   <span>{entry.location}</span>
                   <small>
@@ -64,12 +64,12 @@ export function EntriesList({
                   <small>{formatHours(payroll.overtimeHours)} OT</small>
                 </div>
                 <div className="entry-row__actions">
-                  <button type="button" className="icon-button" onClick={() => onEdit(entry)} aria-label="Edit entry">
+                  <button type="button" className="ghost-button ghost-button--small" onClick={() => onEdit(entry)} aria-label="Edit entry">
                     Edit
                   </button>
                   <button
                     type="button"
-                    className="icon-button icon-button--danger"
+                    className="ghost-button ghost-button--small ghost-button--danger"
                     onClick={() => {
                       if (window.confirm("Delete this work entry?")) {
                         onDelete(entry.id);
