@@ -29,9 +29,7 @@ export function formatHours(value: number): string {
 }
 
 export function formatUnitPrice(value: number): string {
-  const rounded = roundRate(value);
-  const hasExtraPrecision = Math.abs(rounded - roundMoney(rounded)) > 0.0001;
-  return `$${rounded.toFixed(hasExtraPrecision ? 3 : 2)}`;
+  return formatMoney(value);
 }
 
 export function parseLocalDate(value: string): Date {
