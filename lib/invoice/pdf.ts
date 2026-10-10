@@ -9,29 +9,27 @@ import { invoiceFileName, invoiceMetaDescription } from "./invoice";
 
 type Rgb = [number, number, number];
 
-// Light theme tokens from app/globals.css, so the PDF matches the site.
+// Renan's style guide palette (see app/globals.css): black, red accent, warm greys.
 const theme = {
-  ink: [16, 18, 35] as Rgb, // --ink #101223
-  ink2: [35, 38, 74] as Rgb, // --ink-2 #23264a
-  accent: [43, 68, 232] as Rgb, // --accent #2b44e8
-  accentSoft: [238, 240, 254] as Rgb, // --accent-soft #eef0fe
-  onDark: [195, 203, 255] as Rgb, // --on-accent-2 #c3cbff
-  text2: [79, 86, 126] as Rgb, // invoice paper copy #4f567e
-  surface2: [246, 247, 253] as Rgb, // --surface-2 #f6f7fd
-  border: [226, 229, 247] as Rgb, // --border #e2e5f7
+  ink: [0, 0, 0] as Rgb, // --ink #000000
+  ink2: [26, 26, 26] as Rgb, // --ink-2 #1A1A1A
+  accent: [196, 18, 48] as Rgb, // --accent #C41230
+  text2: [74, 74, 74] as Rgb, // --text-2 #4A4A4A
+  surface2: [246, 245, 243] as Rgb, // --surface-2 #F6F5F3
+  border: [216, 213, 208] as Rgb, // --border #D8D5D0
   white: [255, 255, 255] as Rgb
 };
 
-const FONT = "Archivo";
-const FONT_HEAVY = "ArchivoExtraBold";
-const FALLBACK_FONT = "helvetica";
-// Totals sit inset from the right margin so the grand total band stays inside it.
+// Body text uses the built-in Helvetica (the guide's Helvetica Neue stack).
+const BODY_FONT = "helvetica";
+const HEADING_FONT = "ZillaSlab";
+const LABEL_FONT = "IBMPlexMono";
+// Totals sit inset from the right margin so the grand total callout stays inside it.
 const TOTALS_INSET = 14;
 
 const fontFiles = [
-  { file: "Archivo-Regular.ttf", name: FONT, style: "normal" },
-  { file: "Archivo-Bold.ttf", name: FONT, style: "bold" },
-  { file: "Archivo-ExtraBold.ttf", name: FONT_HEAVY, style: "normal" }
+  { file: "ZillaSlab-Bold.ttf", name: HEADING_FONT, style: "normal" },
+  { file: "IBMPlexMono-Medium.ttf", name: LABEL_FONT, style: "normal" }
 ];
 
 let fontDataPromise: Promise<Record<string, string> | null> | null = null;
@@ -64,27 +62,48 @@ function loadFontData(): Promise<Record<string, string> | null> {
   return fontDataPromise;
 }
 
-type Fonts = { body: string; heavy: string; heavyStyle: string };
+type FontRef = { name: string; style: string };
+type Fonts = { heading: FontRef; label: FontRef };
 
 async function createDocument(): Promise<{ doc: jsPDF; fonts: Fonts }> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const data = await loadFontData();
 
   if (!data) {
-    return { doc, fonts: { body: FALLBACK_FONT, heavy: FALLBACK_FONT, heavyStyle: "bold" } };
+    return {
+      doc,
+      fonts: { heading: { name: BODY_FONT, style: "bold" }, label: { name: BODY_FONT, style: "bold" } }
+    };
   }
 
   for (const { file, name, style } of fontFiles) {
     doc.addFileToVFS(file, data[file]);
     doc.addFont(file, name, style);
   }
-  return { doc, fonts: { body: FONT, heavy: FONT_HEAVY, heavyStyle: "normal" } };
+  return {
+    doc,
+    fonts: { heading: { name: HEADING_FONT, style: "normal" }, label: { name: LABEL_FONT, style: "normal" } }
+  };
 }
 
 function runAsync(task: () => Promise<void>): void {
   task().catch((error) => {
     console.error("PDF generation failed", error);
   });
+}
+
+function drawLabel(doc: jsPDF, fonts: Fonts, text: string, x: number, y: number): void {
+  doc.setFont(fonts.label.name, fonts.label.style);
+  doc.setFontSize(8);
+  doc.setTextColor(...theme.accent);
+  doc.text(text.toUpperCase(), x, y, { charSpace: 1.4 });
+}
+
+function drawCallout(doc: jsPDF, x: number, y: number, width: number, height: number): void {
+  doc.setFillColor(...theme.surface2);
+  doc.rect(x, y, width, height, "F");
+  doc.setFillColor(...theme.accent);
+  doc.rect(x, y, 4, height, "F");
 }
 
 function drawHeader(
@@ -94,22 +113,20 @@ function drawHeader(
 ): void {
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(...theme.ink);
-  doc.rect(0, 0, pageWidth, 112, "F");
-  doc.setFillColor(...theme.accent);
-  doc.rect(0, 112, pageWidth, 4, "F");
+  doc.setFont(fonts.heading.name, fonts.heading.style);
+  doc.setFontSize(34);
+  doc.setTextColor(...theme.ink);
+  doc.text(title, margin, 82);
 
-  doc.setFont(fonts.heavy, fonts.heavyStyle);
-  doc.setFontSize(28);
-  doc.setTextColor(...theme.white);
-  doc.text(title, margin, 66, { charSpace: -0.4 });
-
-  doc.setFont(fonts.body, "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...theme.onDark);
+  doc.setFont(fonts.label.name, fonts.label.style);
+  doc.setFontSize(9);
+  doc.setTextColor(...theme.text2);
   meta.forEach((line, index) => {
-    doc.text(line, pageWidth - margin, 44 + index * 16, { align: "right" });
+    doc.text(line, pageWidth - margin, 52 + index * 15, { align: "right" });
   });
+
+  doc.setFillColor(...theme.ink);
+  doc.rect(margin, 100, pageWidth - margin * 2, 5, "F");
 }
 
 function drawParties(
@@ -123,31 +140,28 @@ function drawParties(
 ): number {
   const pageWidth = doc.internal.pageSize.getWidth();
   const rightX = pageWidth / 2 + 8;
-  const labelY = 152;
-  const bodyY = 170;
+  const labelY = 140;
+  const bodyY = 158;
   const lineHeight = 10 * doc.getLineHeightFactor();
 
-  doc.setFont(fonts.body, "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...theme.accent);
-  doc.text(left.label.toUpperCase(), margin, labelY, { charSpace: 1.2 });
-  doc.text(right.label.toUpperCase(), rightX, labelY, { charSpace: 1.2 });
+  drawLabel(doc, fonts, left.label, margin, labelY);
+  drawLabel(doc, fonts, right.label, rightX, labelY);
 
-  doc.setFont(fonts.body, "normal");
+  doc.setFont(BODY_FONT, "normal");
   doc.setFontSize(10);
   doc.setTextColor(...theme.ink2);
   doc.text(left.lines, margin, bodyY);
   doc.text(right.lines, rightX, bodyY);
 
   const tallest = Math.max(left.lines.length, right.lines.length, 1);
-  return Math.max(236, bodyY + tallest * lineHeight + 28);
+  return Math.max(224, bodyY + tallest * lineHeight + 28);
 }
 
-function tableTheme(fonts: Fonts, fontSize: number, cellPadding: number) {
+function tableTheme(fontSize: number, cellPadding: number) {
   return {
     theme: "plain" as const,
     styles: {
-      font: fonts.body,
+      font: BODY_FONT,
       fontSize,
       cellPadding,
       textColor: theme.ink2,
@@ -172,10 +186,9 @@ function lastTableY(doc: jsPDF): number {
 
 function drawTotalRow(
   doc: jsPDF,
-  fonts: Fonts,
   { label, value, x, right, y }: { label: string; value: string; x: number; right: number; y: number }
 ): void {
-  doc.setFont(fonts.body, "normal");
+  doc.setFont(BODY_FONT, "normal");
   doc.setFontSize(10);
   doc.setTextColor(...theme.text2);
   doc.text(label, x, y);
@@ -188,13 +201,16 @@ function drawGrandTotal(
   fonts: Fonts,
   { label, value, x, right, y }: { label: string; value: string; x: number; right: number; y: number }
 ): void {
-  doc.setFillColor(...theme.accentSoft);
-  doc.roundedRect(x - TOTALS_INSET, y - 22, right - x + TOTALS_INSET * 2, 36, 8, 8, "F");
+  drawCallout(doc, x - TOTALS_INSET, y - 23, right - x + TOTALS_INSET * 2, 38);
 
-  doc.setFont(fonts.heavy, fonts.heavyStyle);
-  doc.setFontSize(13);
-  doc.setTextColor(...theme.accent);
+  doc.setFont(fonts.heading.name, fonts.heading.style);
+  doc.setFontSize(15);
+  doc.setTextColor(...theme.ink);
   doc.text(label, x, y);
+  // Zilla Slab uses old-style figures, so the amount stays in Helvetica for even digits.
+  doc.setFont(BODY_FONT, "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...theme.accent);
   doc.text(value, right, y, { align: "right" });
 }
 
@@ -253,7 +269,7 @@ export function generateInvoicePdf({
         formatUnitPrice(line.unitPrice),
         formatMoney(line.total)
       ]),
-      ...tableTheme(fonts, 10, 9),
+      ...tableTheme(10, 9),
       columnStyles: {
         1: { halign: "right", cellWidth: 70 },
         2: { halign: "right", cellWidth: 90 },
@@ -269,26 +285,20 @@ export function generateInvoicePdf({
     const totalsX = right - 190;
     const totalsY = lastTableY(doc) + 30;
 
-    drawTotalRow(doc, fonts, { label: "Subtotal", value: formatMoney(totals.subtotal), x: totalsX, right: totalsRight, y: totalsY });
-    drawTotalRow(doc, fonts, { label: "Tax 0%", value: formatMoney(totals.tax), x: totalsX, right: totalsRight, y: totalsY + 20 });
+    drawTotalRow(doc, { label: "Subtotal", value: formatMoney(totals.subtotal), x: totalsX, right: totalsRight, y: totalsY });
+    drawTotalRow(doc, { label: "Tax 0%", value: formatMoney(totals.tax), x: totalsX, right: totalsRight, y: totalsY + 20 });
     drawGrandTotal(doc, fonts, { label: "Total", value: formatMoney(totals.total), x: totalsX, right: totalsRight, y: totalsY + 52 });
 
     const bankLines = details.bankDetails.split("\n").filter(Boolean);
     const paymentY = totalsY + 104;
     const lineHeight = 10 * doc.getLineHeightFactor();
-    doc.setFillColor(...theme.surface2);
-    doc.setDrawColor(...theme.border);
-    doc.setLineWidth(0.6);
-    doc.roundedRect(margin, paymentY - 20, 260, 40 + Math.max(bankLines.length, 1) * lineHeight, 8, 8, "FD");
+    drawCallout(doc, margin, paymentY - 20, 260, 40 + Math.max(bankLines.length, 1) * lineHeight);
 
-    doc.setFont(fonts.body, "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...theme.accent);
-    doc.text("Payment Details".toUpperCase(), margin + 14, paymentY, { charSpace: 1.2 });
-    doc.setFont(fonts.body, "normal");
+    drawLabel(doc, fonts, "Payment Details", margin + 18, paymentY);
+    doc.setFont(BODY_FONT, "normal");
     doc.setFontSize(10);
     doc.setTextColor(...theme.ink2);
-    doc.text(bankLines, margin + 14, paymentY + 18);
+    doc.text(bankLines, margin + 18, paymentY + 18);
 
     doc.save(invoiceFileName(details));
   });
@@ -355,7 +365,7 @@ export function generateRealHoursPdf({
           formatMoney(payroll.totalAmount)
         ];
       }),
-      ...tableTheme(fonts, 9, 7),
+      ...tableTheme(9, 7),
       columnStyles: {
         2: { halign: "center", cellWidth: 48 },
         3: { halign: "center", cellWidth: 48 },
@@ -375,21 +385,21 @@ export function generateRealHoursPdf({
     const totalsX = right - 220;
     const totalsY = lastTableY(doc) + 30;
 
-    drawTotalRow(doc, fonts, {
+    drawTotalRow(doc, {
       label: "Total real hours",
       value: `${totals.totalHours.toFixed(2)}h`,
       x: totalsX,
       right: totalsRight,
       y: totalsY
     });
-    drawTotalRow(doc, fonts, {
+    drawTotalRow(doc, {
       label: "Regular hours",
       value: `${totals.regularHours.toFixed(2)}h`,
       x: totalsX,
       right: totalsRight,
       y: totalsY + 20
     });
-    drawTotalRow(doc, fonts, {
+    drawTotalRow(doc, {
       label: "Overtime hours",
       value: `${totals.overtimeHours.toFixed(2)}h`,
       x: totalsX,
