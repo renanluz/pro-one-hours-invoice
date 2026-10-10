@@ -32,9 +32,9 @@ export function generateInvoicePdf({
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(31, 37, 35);
   doc.text("INVOICE", margin, 58);
-  doc.setFillColor(196, 18, 48);
+  doc.setFillColor(63, 107, 92);
   doc.rect(margin, 68, 56, 4, "F");
 
   doc.setFontSize(10);
@@ -50,11 +50,11 @@ export function generateInvoicePdf({
   });
 
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(196, 18, 48);
-  doc.text("FROM", margin, 118);
-  doc.text("BILL TO", pageWidth / 2 + 8, 118);
+  doc.setTextColor(63, 107, 92);
+  doc.text("From", margin, 118);
+  doc.text("Bill To", pageWidth / 2 + 8, 118);
 
-  doc.setTextColor(26, 26, 26);
+  doc.setTextColor(31, 37, 35);
   doc.setFont("helvetica", "normal");
   doc.text(
     [details.fromName, `ABN: ${details.fromAbn}`, details.fromAddress].filter(Boolean),
@@ -77,11 +77,11 @@ export function generateInvoicePdf({
       font: "helvetica",
       fontSize: 10,
       cellPadding: 8,
-      lineColor: [216, 213, 208],
+      lineColor: [226, 225, 218],
       lineWidth: 0.4
     },
     headStyles: {
-      fillColor: [0, 0, 0],
+      fillColor: [31, 37, 35],
       textColor: [255, 255, 255],
       fontStyle: "bold"
     },
@@ -102,17 +102,17 @@ export function generateInvoicePdf({
   doc.text(formatMoney(totals.subtotal), pageWidth - margin, totalsY, { align: "right" });
   doc.text("Tax 0%", totalsX, totalsY + 20);
   doc.text(formatMoney(totals.tax), pageWidth - margin, totalsY + 20, { align: "right" });
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1.5);
+  doc.setDrawColor(31, 37, 35);
+  doc.setLineWidth(1);
   doc.line(totalsX, totalsY + 30, pageWidth - margin, totalsY + 30);
   doc.setFont("helvetica", "bold");
   doc.text("Total", totalsX, totalsY + 44);
   doc.text(formatMoney(totals.total), pageWidth - margin, totalsY + 44, { align: "right" });
 
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(196, 18, 48);
-  doc.text("PAYMENT DETAILS", margin, totalsY + 92);
-  doc.setTextColor(26, 26, 26);
+  doc.setTextColor(63, 107, 92);
+  doc.text("Payment Details", margin, totalsY + 92);
+  doc.setTextColor(31, 37, 35);
   doc.setFont("helvetica", "normal");
   doc.text(details.bankDetails.split("\n").filter(Boolean), margin, totalsY + 110);
 
@@ -143,9 +143,9 @@ export function generateRealHoursPdf({
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(31, 37, 35);
   doc.text("REAL HOURS", margin, 58);
-  doc.setFillColor(196, 18, 48);
+  doc.setFillColor(63, 107, 92);
   doc.rect(margin, 68, 56, 4, "F");
 
   doc.setFontSize(10);
@@ -161,11 +161,11 @@ export function generateRealHoursPdf({
   });
 
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(196, 18, 48);
-  doc.text("WORKER", margin, 118);
-  doc.text("CLIENT", pageWidth / 2 + 8, 118);
+  doc.setTextColor(63, 107, 92);
+  doc.text("Worker", margin, 118);
+  doc.text("Client", pageWidth / 2 + 8, 118);
 
-  doc.setTextColor(26, 26, 26);
+  doc.setTextColor(31, 37, 35);
   doc.setFont("helvetica", "normal");
   doc.text(
     [details.fromName, `ABN: ${details.fromAbn}`, details.fromAddress].filter(Boolean),
@@ -195,11 +195,11 @@ export function generateRealHoursPdf({
       font: "helvetica",
       fontSize: 9,
       cellPadding: 7,
-      lineColor: [216, 213, 208],
+      lineColor: [226, 225, 218],
       lineWidth: 0.4
     },
     headStyles: {
-      fillColor: [0, 0, 0],
+      fillColor: [31, 37, 35],
       textColor: [255, 255, 255],
       fontStyle: "bold"
     },
@@ -225,8 +225,8 @@ export function generateRealHoursPdf({
   doc.text(`${totals.regularHours.toFixed(2)}h`, pageWidth - margin, totalsY + 20, { align: "right" });
   doc.text("Overtime hours", totalsX, totalsY + 40);
   doc.text(`${totals.overtimeHours.toFixed(2)}h`, pageWidth - margin, totalsY + 40, { align: "right" });
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1.5);
+  doc.setDrawColor(31, 37, 35);
+  doc.setLineWidth(1);
   doc.line(totalsX, totalsY + 54, pageWidth - margin, totalsY + 54);
   doc.setFont("helvetica", "bold");
   doc.text("Total real amount", totalsX, totalsY + 68);
